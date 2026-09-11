@@ -1,4 +1,4 @@
-name: Kane CLI Integration Tests
+name: Kane CLI Integration Tests (Parallel)
 
 on:
   push:
@@ -8,8 +8,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  kane-tests:
+  kane-parallel-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-spec:
+          - "Verify homepage loads and key elements render correctly"
+          - "Log in with standard_user, add item to cart, and verify cart badge"
+          - "Proceed to checkout, enter user details, and confirm order receipt"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -25,12 +32,12 @@ jobs:
       - name: Install Kane CLI
         run: npm install -g @testmuai/kane-cli
 
-      - name: Execute Browser Test
+      - name: Execute Kane Test Spec
         env:
           LT_USERNAME: ${{ secrets.LT_USERNAME }}
           LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
         run: |
-          kane-cli run "Verify homepage loads and key elements render correctly" \
+          kane-cli run "${{ matrix.test-spec }}" \
             --url "https://www.saucedemo.com" \
             --headless \
             --agent \
@@ -42,5 +49,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kane-test-logs
+          name: kane-test-logs-${{ strategy.job-index }}
           path: ~/.testmuai/kaneai/sessions/
