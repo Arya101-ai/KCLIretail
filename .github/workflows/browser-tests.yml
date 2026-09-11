@@ -1,4 +1,4 @@
-name: Kane CLI Integration Tests (Parallel)
+name: Kane CLI Integration Tests (Parallel with Assurance)
 
 on:
   push:
@@ -33,6 +33,7 @@ jobs:
         run: npm install -g @testmuai/kane-cli
 
       - name: Execute Kane Test Spec
+        id: kane_execution
         env:
           LT_USERNAME: ${{ secrets.LT_USERNAME }}
           LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
@@ -45,9 +46,21 @@ jobs:
             --username "$LT_USERNAME" \
             --access-key "$LT_ACCESS_KEY"
 
-      - name: Upload Test Session Artifacts
+      - name: Assurance - Validate Diagnostic Verdict
+        if: always()
+        run: |
+          echo "=== KANE ASSURANCE DIAGNOSTIC VERDICT ==="
+          if [ -d "$HOME/.testmuai/kaneai/sessions/" ]; then
+            echo "Session logs and diagnostic verdicts successfully generated."
+            ls -la $HOME/.testmuai/kaneai/sessions/
+          else
+            echo "Error: No assurance session records found!"
+            exit 1
+          fi
+
+      - name: Upload Evidence & Assurance Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kane-test-logs-${{ strategy.job-index }}
+          name: kane-evidence-assurance-${{ strategy.job-index }}
           path: ~/.testmuai/kaneai/sessions/
